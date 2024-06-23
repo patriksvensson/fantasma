@@ -24,7 +24,7 @@ services.AddFantasma(config =>
 
     // Schedule a recurring job that executes 
     // every 10 seconds.
-    config.ScheduleRecurring(
+    config.AddRecurringJob(
         "unique-id-of-job", 
         "*/10 * * * * *", 
         new MyRecurringJob.Data());
