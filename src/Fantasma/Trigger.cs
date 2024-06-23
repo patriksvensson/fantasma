@@ -6,7 +6,6 @@ public sealed class Trigger
     [MemberNotNullWhen(true, nameof(Time))]
     internal bool IsDelayed => Time != null;
 
-    [MemberNotNullWhen(true, nameof(Id))]
     [MemberNotNullWhen(true, nameof(Cron))]
     internal bool IsRecurring => Id != null && Cron != null;
 

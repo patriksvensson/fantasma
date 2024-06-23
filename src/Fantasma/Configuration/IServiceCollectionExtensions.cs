@@ -1,5 +1,3 @@
-using Fantasma.Internal;
-
 namespace Fantasma;
 
 [PublicAPI]
@@ -21,8 +19,38 @@ public static class IServiceCollectionExtensions
         services.AddHostedService<JobEngine>();
         services.AddSingleton<IJobScheduler, JobScheduler>();
         services.AddSingleton<IJobEngine, JobEngine>();
-        services.AddSingleton<IJobStorage, InMemoryStorage>();
         services.AddSingleton<TimeProvider>(_ => TimeProvider.System);
+
+        if (configuration.DatabaseContext != null)
+        {
+            // Entity Framework storage
+            services.AddSingleton<IJobProvider, SqlProvider>();
+            services.AddSingleton<ICluster, SqlCluster>();
+            services.AddSingleton<SqlHeartbeatThread>();
+            services.AddScoped<SqlStorage>();
+            services.AddScoped(typeof(IFantasmaDatabase), configuration.DatabaseContext);
+        }
+        else
+        {
+            // In-memory storage
+            services.AddSingleton<IJobProvider, InMemoryProvider>();
+            services.AddSingleton<ICluster, NopCluster>();
+        }
+
+        // No clustering?
+        if (configuration.NoCluster)
+        {
+            services.Remove<ICluster>();
+            services.AddSingleton<ICluster, NopCluster>();
+        }
+
+        // Got sleep preference?
+        if (configuration.SleepPreference != null)
+        {
+            services.AddSingleton(
+                new SleepPreference(
+                    configuration.SleepPreference.Value));
+        }
 
         // Register all recurring jobs
         foreach (var job in configuration.RecurringJobs)

@@ -2,12 +2,12 @@ namespace Fantasma.Internal;
 
 internal sealed class JobScheduler : IJobScheduler
 {
-    private readonly IJobStorage _storage;
+    private readonly IJobProvider _provider;
     private readonly TimeProvider _time;
 
-    public JobScheduler(IJobStorage storage, TimeProvider time)
+    public JobScheduler(IJobProvider provider, TimeProvider time)
     {
-        _storage = storage;
+        _provider = provider ?? throw new ArgumentNullException(nameof(provider));
         _time = time ?? throw new ArgumentNullException(nameof(time));
     }
 
@@ -28,7 +28,11 @@ internal sealed class JobScheduler : IJobScheduler
             Cron = trigger.IsRecurring ? trigger.Cron : null,
         };
 
-        await _storage.Add(job);
+        using (var storage = _provider.GetStorage())
+        {
+            await storage.Add(job);
+        }
+
         return true;
     }
 

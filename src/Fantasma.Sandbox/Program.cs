@@ -1,5 +1,5 @@
-using Fantasma.Sandbox.Components;
 using Fantasma.Sandbox.Jobs;
+using Microsoft.EntityFrameworkCore;
 
 namespace Fantasma.Sandbox;
 
@@ -9,32 +9,66 @@ public class Program
     {
         var builder = WebApplication.CreateBuilder(args);
 
-        builder.Services.AddFantasma(config =>
-        {
-            config.RegisterHandlersInAssemblyContaining<Program>();
-            config.AddRecurringJob("recurring", "*/10 * * * * *", new MyRecurringJob.Data());
-        });
+        // Configure the database
+        builder.Services.AddDbContext<DatabaseContext>(
+            options =>
+            {
+                options.UseSqlServer(
+                    builder.Configuration
+                        .GetConnectionString("Database"));
+            });
 
-        // Add services to the container.
-        builder.Services.AddRazorComponents()
-            .AddInteractiveServerComponents();
+        // Configure fantasma
+        builder.Services.AddFantasma(
+            config =>
+            {
+                config.RegisterHandlersInAssemblyContaining<Program>();
+                config.UseEntityFramework<DatabaseContext>();
+                config.NoClustering();
+                config.SetSleepPreference(TimeSpan.FromSeconds(2));
+
+                // Run a job every 10 seconds
+                config.AddRecurringJob(
+                    "recurring-job",
+                    "*/10 * * * * *",
+                    new MyRecurringJob.Data(32));
+            });
+
+        builder.Services.AddEndpointsApiExplorer();
+        builder.Services.AddSwaggerGen();
 
         var app = builder.Build();
 
-        // Configure the HTTP request pipeline.
-        if (!app.Environment.IsDevelopment())
+        // Perform database migrations
+        using (var scope = app.Services.CreateScope())
         {
-            app.UseExceptionHandler("/Error");
-            app.UseHsts();
+            var context = scope.ServiceProvider.GetRequiredService<DatabaseContext>();
+            context.Database.Migrate();
+        }
+
+        // Configure the HTTP request pipeline.
+        if (app.Environment.IsDevelopment())
+        {
+            app.UseSwagger();
+            app.UseSwaggerUI();
         }
 
         app.UseHttpsRedirection();
 
-        app.UseStaticFiles();
-        app.UseAntiforgery();
+        app.MapGet(
+                "/schedule", async (IJobScheduler scheduler) =>
+                {
+                    // Schedule a one-off job
+                    var scheduled = await scheduler.Schedule(
+                        new MyOneOffJob.Data(Random.Shared.Next()),
+                        Trigger.Now());
 
-        app.MapRazorComponents<App>()
-            .AddInteractiveServerRenderMode();
+                    return scheduled
+                        ? Results.Ok()
+                        : Results.StatusCode(502);
+                })
+            .WithName("GetWeatherForecast")
+            .WithOpenApi();
 
         app.Run();
     }

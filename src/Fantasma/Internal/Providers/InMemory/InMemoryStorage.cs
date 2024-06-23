@@ -11,6 +11,10 @@ internal sealed class InMemoryStorage : IJobStorage
         _jobs = new List<Job>();
     }
 
+    public void Dispose()
+    {
+    }
+
     public Task Add(Job job)
     {
         // Already added?
@@ -30,7 +34,12 @@ internal sealed class InMemoryStorage : IJobStorage
         return Task.CompletedTask;
     }
 
-    public Task<Job?> Acquire()
+    public Task Update(Job job)
+    {
+        return Task.CompletedTask;
+    }
+
+    public Task<Job?> GetNextJob()
     {
         var now = _time.GetUtcNow().UtcDateTime;
         var job = _jobs.Where(x => x.ScheduledAt < now).MinBy(x => x.ScheduledAt);

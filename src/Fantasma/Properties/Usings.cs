@@ -5,6 +5,7 @@ global using System.Reflection;
 global using System.Threading;
 global using System.Threading.Tasks;
 global using Cronos;
+global using Fantasma.EntityFramework;
 global using Fantasma.Internal;
 global using JetBrains.Annotations;
 global using Microsoft.Extensions.DependencyInjection;

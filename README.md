@@ -13,16 +13,28 @@ ADJECTIVE
 
 ---
 
-Fantasma is a minimalistic, in-memory (for now) job scheduler library for ASP.NET Core, with a MediatR-like API.
+Fantasma is a minimalistic, opinionated job scheduler library for ASP.NET Core, with a MediatR-like API.
 
 - [x] Job queuing
 - [x] Delayed jobs
 - [x] Recurring jobs
 - [x] In-memory storage
-- [ ] Health check
-- [ ] SQL storage
-- [ ] SQLite storage
+- [ ] Health checks
+- [X] SQL storage
+- [X] SQLite storage
 - [ ] API endpoint
+- [X] Clustering
+
+## Disclaimer
+
+> [!CAUTION]
+> Read this before using Fantasma.
+
+* **Fantasma is not yet suitable for production.**
+* Time sensitive jobs are not supported.  
+  For example, when using the SQL backend, cluster nodes sometimes need 
+  to elect a new leader (if the current leader drops off), and this can take up to a minute. During that time no jobs are processed. 
+  This is by design and not something that will change.
 
 ## Usage
 
@@ -35,12 +47,30 @@ services.AddFantasma(config =>
     // assembly as `Program`.
     config.RegisterHandlersInAssemblyContaining<Program>();
 
+    // Use Entity Framework as storage.
+    // Uncomment this to use the in-memory storage. 
+    config.UseEntityFramework<DatabaseContext>();
+
+    // Turn off clustering when using Entity Framework.
+    // Only do this if you only have one web server running
+    // the scheduler.
+    config.NoClustering();
+
+    // Override the sleep interval between jobs.
+    // The in memory storage waits 1 second between
+    // job batches, but the default for SQL (EF Core) 
+    // is 10 seconds to avoid hammering the database.
+    config.SetSleepPreference(TimeSpan.FromSeconds(2));
+
     // Schedule a recurring job that executes 
     // every 10 seconds.
     config.AddRecurringJob(
         "unique-id-of-job", 
         "*/10 * * * * *", 
-        new MyRecurringJob.Data());
+        new MyRecurringJob.Data 
+        {
+            Foo = 32,
+        });
 });
 ```
 
