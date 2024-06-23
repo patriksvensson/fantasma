@@ -1,5 +1,18 @@
 # Fantasma
 
+```
+/fanˈtazma/ (italian)
+
+MASCULINE NOUN  
+  (spettro) ghost * spectre (literaly) * phantom (literaly)
+
+ADJECTIVE
+  governo fantasma: shadow cabinet
+  città/scrittore fantasma: ghost town/writer
+```
+
+---
+
 Fantasma is a minimalistic, in-memory (for now) job scheduler library for ASP.NET Core, with a MediatR-like API.
 
 - [x] Job queuing
