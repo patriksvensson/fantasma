@@ -13,7 +13,7 @@ internal sealed class JobScheduler : IJobScheduler
 
     public async Task<bool> Schedule(IJobData data, Trigger trigger)
     {
-        var scheduledAt = trigger.GetNextExecutionTime(_time);
+        var scheduledAt = GetNextExecutionTime(trigger, _time);
         if (scheduledAt == null)
         {
             return false;
@@ -25,10 +25,27 @@ internal sealed class JobScheduler : IJobScheduler
             ScheduledAt = scheduledAt.Value,
             Status = JobStatus.Scheduled,
             Data = data,
-            Cron = trigger.IsRecurring ? trigger.Cron.ToString() : null,
+            Cron = trigger.IsRecurring ? trigger.Cron : null,
         };
 
         await _storage.Add(job);
         return true;
+    }
+
+    private static DateTimeOffset? GetNextExecutionTime(Trigger trigger, TimeProvider time)
+    {
+        if (trigger.IsDelayed)
+        {
+            return trigger.Time;
+        }
+
+        if (trigger.IsRecurring)
+        {
+            var expr = CronExpression.Parse(trigger.Cron, CronFormat.IncludeSeconds);
+            var now = time.GetUtcNow().UtcDateTime;
+            return expr.GetNextOccurrence(now);
+        }
+
+        return DateTimeOffset.Now;
     }
 }
