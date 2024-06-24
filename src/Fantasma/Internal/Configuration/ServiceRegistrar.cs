@@ -1,4 +1,4 @@
-// Borrowed from Mediatr (https://github.com/jbogard/MediatR) by Jimmy Bogart.
+// Borrowed from MediatR (https://github.com/jbogard/MediatR) by Jimmy Bogard.
 // Licensed under Apache 2.0 (https://github.com/jbogard/MediatR/blob/master/LICENSE)
 
 using Fantasma.Internal;
