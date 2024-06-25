@@ -1,5 +1,3 @@
-using Fantasma.Internal;
-
 namespace Fantasma;
 
 [PublicAPI]

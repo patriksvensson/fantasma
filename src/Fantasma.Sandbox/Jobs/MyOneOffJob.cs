@@ -1,17 +1,17 @@
 namespace Fantasma.Sandbox.Jobs;
 
-public sealed class MyRecurringJob : JobHandler<MyRecurringJob.Data>
+public sealed class MyOneOffJob : JobHandler<MyOneOffJob.Data>
 {
-    private readonly ILogger<MyRecurringJob> _logger;
+    private readonly ILogger<MyOneOffJob> _logger;
 
-    public MyRecurringJob(ILogger<MyRecurringJob> logger)
+    public MyOneOffJob(ILogger<MyOneOffJob> logger)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
     public sealed class Data : IJobData
     {
-        public int Value { get; init; }
+        public int Value { get; }
 
         public Data(int value)
         {
@@ -21,7 +21,7 @@ public sealed class MyRecurringJob : JobHandler<MyRecurringJob.Data>
 
     public override Task Handle(Data data, CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation($"Hello from a recurring job: {data.Value}");
+        _logger.LogInformation($"Hello from one-off job: {data.Value}");
         return Task.CompletedTask;
     }
 }
