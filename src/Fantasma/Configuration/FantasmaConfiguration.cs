@@ -42,10 +42,10 @@ public sealed class FantasmaConfiguration
         return this;
     }
 
-    public FantasmaConfiguration AddRecurringJob<T>(string id, string cron, T data)
+    public FantasmaConfiguration AddRecurringJob<T>(string name, JobId id, Cron cron, T data)
         where T : IJobData
     {
-        RecurringJobs.Add(new RecurringJob(id, cron, data));
+        RecurringJobs.Add(new RecurringJob(id.Id, name, cron.Expression, data));
         return this;
     }
 }

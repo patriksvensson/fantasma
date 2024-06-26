@@ -1,6 +1,3 @@
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
-
 namespace Fantasma.EntityFramework;
 
 [PublicAPI]
@@ -10,9 +7,9 @@ public sealed class FantasmaCluster
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public int Id { get; set; }
 
-    public long Token { get; set; }
-    public long Elected { get; set; }
-    public DateTime LastHeartbeat { get; set; }
+    public required long Token { get; set; }
+    public required long Elected { get; set; }
+    public required DateTime LastHeartbeat { get; set; }
 
     internal bool IsAlive(TimeProvider time)
     {

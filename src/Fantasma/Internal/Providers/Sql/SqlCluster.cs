@@ -66,7 +66,7 @@ internal sealed class SqlCluster : ICluster
         }
 
         // Get all nodes we consider alive
-        var nodes = (await _database.Cluster.AsNoTracking().ToListAsync(cancellationToken))
+        var nodes = (await _database.FantasmaCluster.AsNoTracking().ToListAsync(cancellationToken))
             .Where(x => x.IsAlive(_time))
             .ToList();
 
@@ -131,7 +131,7 @@ internal sealed class SqlCluster : ICluster
 
     private async Task<FantasmaCluster> GetClusterNode(CancellationToken cancellationToken)
     {
-        var node = await _database.Cluster.SingleOrDefaultAsync(x => x.Token == _heartbeat.Token, cancellationToken);
+        var node = await _database.FantasmaCluster.SingleOrDefaultAsync(x => x.Token == _heartbeat.Token, cancellationToken);
         if (node == null)
         {
             throw new InvalidOperationException("Could not get cluster node");
@@ -142,7 +142,7 @@ internal sealed class SqlCluster : ICluster
 
     private async Task<bool> HasConsensus(CancellationToken cancellationToken)
     {
-        return (await _database.Cluster.AsNoTracking().ToListAsync(cancellationToken))
+        return (await _database.FantasmaCluster.AsNoTracking().ToListAsync(cancellationToken))
             .Where(x => x.IsAlive(_time))
             .ToList()
             .DistinctBy(x => x.Elected)

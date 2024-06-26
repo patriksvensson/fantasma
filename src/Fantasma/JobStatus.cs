@@ -1,5 +1,6 @@
 namespace Fantasma;
 
+[PublicAPI]
 public enum JobStatus
 {
     Scheduled = 0,

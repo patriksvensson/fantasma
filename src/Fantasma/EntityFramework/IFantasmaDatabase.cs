@@ -6,8 +6,9 @@ namespace Fantasma.EntityFramework;
 [PublicAPI]
 public interface IFantasmaDatabase : IDisposable
 {
-    DbSet<FantasmaJob> Jobs { get; }
-    DbSet<FantasmaCluster> Cluster { get; }
+    DbSet<FantasmaJob> FantasmaJobs { get; }
+    DbSet<FantasmaCluster> FantasmaCluster { get; }
+    DbSet<FantasmaHistory> FantasmaHistory { get; }
 
     EntityEntry<TEntity> Remove<TEntity>(TEntity entity)
         where TEntity : class;

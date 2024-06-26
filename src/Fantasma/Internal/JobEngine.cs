@@ -5,6 +5,7 @@ internal sealed class JobEngine : BackgroundService, IJobEngine
     private readonly ICluster _cluster;
     private readonly IJobProvider _provider;
     private readonly IServiceProvider _services;
+    private readonly TimeProvider _time;
     private readonly SleepPreference? _sleepPreference;
 
     public JobEngine(
@@ -13,17 +14,20 @@ internal sealed class JobEngine : BackgroundService, IJobEngine
         IJobProvider provider,
         IEnumerable<RecurringJob> recurringJobs,
         IServiceProvider services,
+        TimeProvider time,
         SleepPreference? sleepPreference = null)
     {
         _cluster = cluster ?? throw new ArgumentNullException(nameof(cluster));
         _provider = provider ?? throw new ArgumentNullException(nameof(provider));
         _services = services ?? throw new ArgumentNullException(nameof(services));
+        _time = time ?? throw new ArgumentNullException(nameof(time));
         _sleepPreference = sleepPreference;
 
         // Add all recurring jobs
         foreach (var recurringJob in recurringJobs)
         {
             scheduler.Schedule(
+                recurringJob.Name,
                 recurringJob.Data,
                 Trigger.Recurring(
                     recurringJob.Id,
@@ -82,7 +86,7 @@ internal sealed class JobEngine : BackgroundService, IJobEngine
 
     private async Task ProcessJob(
         IJobStorage storage,
-        Job acquired,
+        Job job,
         CancellationToken cancellationToken)
     {
         try
@@ -90,24 +94,30 @@ internal sealed class JobEngine : BackgroundService, IJobEngine
             using var scope = _services.CreateScope();
 
             // Resolve the handler
-            var handleType = typeof(IJobHandler<>).MakeGenericType(acquired.Data.GetType());
+            var handleType = typeof(IJobHandler<>).MakeGenericType(job.Data.GetType());
             if (scope.ServiceProvider.GetService(handleType) is not IJobHandler handler)
             {
                 // TODO: Validate this at schedule time?
                 throw new InvalidOperationException("Could not resolve job handler");
             }
 
-            await storage.UpdateJob(acquired, j => j.Status = JobStatus.Running);
-            await handler.Handle(acquired.Data, cancellationToken);
-            await storage.UpdateJob(acquired, j => j.Status = JobStatus.Successful);
+            await storage.UpdateJob(job, j => j.Status = JobStatus.Running);
+            await handler.Handle(job.Data, cancellationToken);
+
+            // Release the job
+            var completed = GetCompletedJob(job, JobStatus.Successful, exception: null);
+            await storage.Release(completed);
         }
-        catch
+        catch (Exception ex)
         {
-            await storage.UpdateJob(acquired, j => j.Status = JobStatus.Failed);
+            var completed = GetCompletedJob(job, JobStatus.Failed, ex);
+            await storage.Release(completed);
         }
-        finally
-        {
-            await storage.Release(acquired);
-        }
+    }
+
+    private CompletedJob GetCompletedJob(Job job, JobStatus status, Exception? exception)
+    {
+        job.Status = status;
+        return new CompletedJob(job, _time.GetUtcNow(), exception?.Message);
     }
 }

@@ -109,14 +109,15 @@ internal sealed class SqlHeartbeatThread
 
     private FantasmaCluster GetClusterNode(IFantasmaDatabase context)
     {
-        var node = context.Cluster.SingleOrDefault(x => x.Token == Token);
+        var node = context.FantasmaCluster.SingleOrDefault(x => x.Token == Token);
         if (node == null)
         {
-            node = context.Cluster.Add(
+            node = context.FantasmaCluster.Add(
                     new FantasmaCluster
                     {
                         Elected = 0,
                         Token = Token,
+                        LastHeartbeat = _time.GetUtcNow().DateTime,
                     })
                 .Entity;
 
