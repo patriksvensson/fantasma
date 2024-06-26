@@ -37,7 +37,7 @@ internal sealed class ScopedStorageAdapter : IJobStorage
         return _storage.GetNextJob();
     }
 
-    public Task Release(Job job)
+    public Task Release(CompletedJob job)
     {
         return _storage.Release(job);
     }

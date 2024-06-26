@@ -53,7 +53,7 @@ internal sealed class InMemoryStorage : IJobStorage
         return Task.FromResult<Job?>(job);
     }
 
-    public Task Release(Job job)
+    public Task Release(CompletedJob job)
     {
         if (job.Cron != null)
         {

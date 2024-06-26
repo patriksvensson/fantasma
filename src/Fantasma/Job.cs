@@ -7,7 +7,9 @@ public sealed class Job
     public required DateTimeOffset ScheduledAt { get; set; }
     public required JobStatus Status { get; set; }
     public required IJobData Data { get; set; }
-    public string? Cron { get; set; }
+    public required JobKind Kind { get; set; }
+    public required string? Cron { get; set; }
+    public required string Name { get; set; }
 
     public Job? Reschedule(TimeProvider time)
     {
@@ -31,6 +33,8 @@ public sealed class Job
             Data = Data,
             ScheduledAt = new DateTimeOffset(scheduledAt.Value),
             Status = JobStatus.Scheduled,
+            Kind = JobKind.Recurring,
+            Name = Name,
         };
     }
 }

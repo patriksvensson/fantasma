@@ -31,6 +31,8 @@ Fantasma is a minimalistic, opinionated job scheduler library for ASP.NET Core, 
 > Read this before using Fantasma.
 
 * **Fantasma is not yet suitable for production.**
+* Database schema changes frequently, so make sure you use
+  a separate database for Fantasma jobs until things are a bit more stable.
 * Time sensitive jobs are not supported.  
   For example, when using the SQL backend, cluster nodes sometimes need 
   to elect a new leader (if the current leader drops off), and this can take up to a minute. During that time no jobs are processed. 
@@ -43,8 +45,7 @@ Fantasma is a minimalistic, opinionated job scheduler library for ASP.NET Core, 
 ```csharp
 services.AddFantasma(config => 
 {
-    // Register all job handlers within the same 
-    // assembly as `Program`.
+    // Register all job handlers within the same assembly as `Program`.
     config.RegisterHandlersInAssemblyContaining<Program>();
 
     // Use Entity Framework as storage.
@@ -62,11 +63,11 @@ services.AddFantasma(config =>
     // is 10 seconds to avoid hammering the database.
     config.SetSleepPreference(TimeSpan.FromSeconds(2));
 
-    // Schedule a recurring job that executes 
-    // every 10 seconds.
+    // Schedule a recurring job that executes every 10 seconds.
     config.AddRecurringJob(
-        "unique-id-of-job", 
-        "*/10 * * * * *", 
+        "A recurring job",
+        new JobId("unique-id-of-job"),
+        new Cron("*/10 * * * * *"),
         new MyRecurringJob.Data 
         {
             Foo = 32,
@@ -102,11 +103,13 @@ public void DoMagic(IScheduler scheduler)
 {
     // Schedule job immediately
     scheduler.Schedule(
+        "A one-off job (foo is 32)",
         new MyJob { Foo = 32 },
         Trigger.Now);
 
     // Schedule job in the future
     scheduler.Schedule(
+        "A one-off, delayed job (foo is 32)",
         new MyJob { Foo = 32 },
         Trigger.AtTime(
             DateTime.Now.AddMinutes(30))
@@ -114,6 +117,7 @@ public void DoMagic(IScheduler scheduler)
 
     // Schedule recurring job
     scheduler.Schedule(
+        "A recurring job (foo is 32)"
         new MyJob { Foo = 32 },
         Trigger.Recurring(
             "unique-id-of-job",

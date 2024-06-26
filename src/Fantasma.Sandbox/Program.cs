@@ -25,12 +25,12 @@ public class Program
                 config.RegisterHandlersInAssemblyContaining<Program>();
                 config.UseEntityFramework<DatabaseContext>();
                 config.NoClustering();
-                config.SetSleepPreference(TimeSpan.FromSeconds(2));
 
                 // Run a job every 10 seconds
                 config.AddRecurringJob(
-                    "recurring-job",
-                    "*/10 * * * * *",
+                    "A recurring job",
+                    new JobId("recurring-job"),
+                    new Cron("*/10 * * * * *"),
                     new MyRecurringJob.Data(32));
             });
 
@@ -59,15 +59,33 @@ public class Program
                 "/schedule", async (IJobScheduler scheduler) =>
                 {
                     // Schedule a one-off job
+                    var value = Random.Shared.Next();
                     var scheduled = await scheduler.Schedule(
-                        new MyOneOffJob.Data(Random.Shared.Next()),
-                        Trigger.Now());
+                        $"A one-off job ({value})",
+                        new MyOneOffJob.Data(value),
+                        Trigger.Now);
 
                     return scheduled
                         ? Results.Ok()
                         : Results.StatusCode(502);
                 })
-            .WithName("GetWeatherForecast")
+            .WithName("Schedule")
+            .WithOpenApi();
+
+        app.MapGet(
+                "/schedule/failing", async (IJobScheduler scheduler) =>
+                {
+                    // Schedule a failing one-off job
+                    var scheduled = await scheduler.Schedule(
+                        "A failing job",
+                        new FailingJob.Data(),
+                        Trigger.Now);
+
+                    return scheduled
+                        ? Results.Ok()
+                        : Results.StatusCode(502);
+                })
+            .WithName("Schedule Failing")
             .WithOpenApi();
 
         app.Run();

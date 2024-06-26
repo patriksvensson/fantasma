@@ -9,5 +9,5 @@ public interface IJobStorage : IDisposable
     Task Update(Job job);
 
     Task<Job?> GetNextJob();
-    Task Release(Job job);
+    Task Release(CompletedJob job);
 }

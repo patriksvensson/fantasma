@@ -27,19 +27,21 @@ internal sealed class SqlStorage : IJobStorage
 
     public async Task Add(Job job)
     {
-        if (await _database.Jobs.FindAsync(job.Id) != null)
+        if (await _database.FantasmaJobs.FindAsync(job.Id) != null)
         {
             return;
         }
 
-        _database.Jobs.Add(
+        _database.FantasmaJobs.Add(
             new FantasmaJob
                 {
                     Id = job.Id,
                     ClrType = job.Data.GetType().AssemblyQualifiedName ?? throw new InvalidOperationException(),
                     Data = JsonConvert.SerializeObject(job.Data),
+                    Name = job.Name,
                     ScheduledAt = job.ScheduledAt.UtcDateTime,
                     Status = JobStatus.Scheduled,
+                    Kind = job.Kind,
                     Cron = job.Cron,
                 });
 
@@ -48,13 +50,13 @@ internal sealed class SqlStorage : IJobStorage
 
     public async Task Remove(Job job)
     {
-        var deleted = await _database.Jobs.Where(j => j.Id == job.Id).ExecuteDeleteAsync();
+        var deleted = await _database.FantasmaJobs.Where(j => j.Id == job.Id).ExecuteDeleteAsync();
         Debug.Assert(deleted == 1, "Expected the job to be deleted");
     }
 
     public async Task Update(Job job)
     {
-        var dbJob = await _database.Jobs.FindAsync(job.Id);
+        var dbJob = await _database.FantasmaJobs.FindAsync(job.Id);
         if (dbJob != null)
         {
             dbJob.Status = job.Status;
@@ -66,7 +68,7 @@ internal sealed class SqlStorage : IJobStorage
     public Task<Job?> GetNextJob()
     {
         var now = _time.GetUtcNow();
-        var nextJob = _database.Jobs.AsNoTracking()
+        var nextJob = _database.FantasmaJobs.AsNoTracking()
             .Where(x => x.ScheduledAt < now)
             .AsEnumerable().MinBy(x => x.ScheduledAt);
 
@@ -92,18 +94,28 @@ internal sealed class SqlStorage : IJobStorage
             new Job
                 {
                     Id = nextJob.Id,
+                    Name = nextJob.Name,
                     ScheduledAt = nextJob.ScheduledAt,
                     Status = JobStatus.Scheduled,
                     Data = data,
+                    Kind = nextJob.Kind,
                     Cron = nextJob.Cron,
                 });
     }
 
-    public async Task Release(Job job)
+    public async Task Release(CompletedJob job)
     {
         // Delete the job
-        var deleted = await _database.Jobs.Where(j => j.Id == job.Id).ExecuteDeleteAsync();
-        Debug.Assert(deleted == 1, "Expected the job to be deleted");
+        var jobToDelete = await _database.FantasmaJobs.FindAsync(job.Id);
+        if (jobToDelete != null)
+        {
+            _database.Remove(jobToDelete);
+            await _database.SaveChangesAsync();
+        }
+
+        // Add the job to job history
+        _database.FantasmaHistory.Add(FantasmaHistory.FromCompleted(job));
+        await _database.SaveChangesAsync();
 
         if (job.Cron != null)
         {

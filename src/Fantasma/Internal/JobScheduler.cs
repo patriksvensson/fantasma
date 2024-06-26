@@ -11,7 +11,7 @@ internal sealed class JobScheduler : IJobScheduler
         _time = time ?? throw new ArgumentNullException(nameof(time));
     }
 
-    public async Task<bool> Schedule(IJobData data, Trigger trigger)
+    public async Task<bool> Schedule(string name, IJobData data, Trigger trigger)
     {
         var scheduledAt = GetNextExecutionTime(trigger, _time);
         if (scheduledAt == null)
@@ -25,7 +25,9 @@ internal sealed class JobScheduler : IJobScheduler
             ScheduledAt = scheduledAt.Value,
             Status = JobStatus.Scheduled,
             Data = data,
+            Kind = trigger.GetJobKind(),
             Cron = trigger.IsRecurring ? trigger.Cron : null,
+            Name = name,
         };
 
         using (var storage = _provider.GetStorage())
@@ -50,6 +52,6 @@ internal sealed class JobScheduler : IJobScheduler
             return expr.GetNextOccurrence(now);
         }
 
-        return DateTimeOffset.Now;
+        return time.GetUtcNow();
     }
 }
